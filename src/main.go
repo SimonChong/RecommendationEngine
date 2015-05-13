@@ -16,8 +16,10 @@ type Rating struct {
 const movies int = 3952
 const maxRating float64 = 5.0
 
+//UserID -> (MovieID -> Rating)
 var userRatingsTraining = make(map[int]map[int]Rating)
 var userRatingsValidation = make(map[int]map[int]Rating)
+
 var userRatingCount = make(map[int]int)
 
 type UserCS struct {
@@ -124,9 +126,10 @@ func findClosestUsers(userID int, topK int, topUsers *UserCSSortable) {
 	userCS := userCSs[userIndex].cosineSimilarity
 	left := userIndex - 1
 	right := userIndex + 1
+	count := len(userCSs)
 
 	var leftDiff, rightDiff float64
-	for i := 0; i < topK && (left >= 0 || right < len(userCSs)); i++ {
+	for i := 0; i < topK && (left >= 0 || right < count); i++ {
 		if left >= 0 {
 			leftDiff = math.Abs(userCS - userCSs[left].cosineSimilarity)
 		} else {
@@ -147,9 +150,47 @@ func findClosestUsers(userID int, topK int, topUsers *UserCSSortable) {
 	}
 }
 
-// func predictUserRating(userID int, movieID int) {
+func predictUserRating(userID int, movieID int, topK int) float64 {
+	userIndex := userCSIndex[userID]
+	userCS := userCSs[userIndex].cosineSimilarity
+	left := userIndex - 1
+	right := userIndex + 1
+	count := len(userCSs)
 
-// }
+	similars := 0      //Users that are closeest and have raited the movie
+	similarsSum := 0.0 //Sum of all ratings (to be used for avg calculation)
+
+	var leftDiff, rightDiff float64
+	for i := 0; i < count && similars < topK && (left >= 0 || right < count); i++ {
+		if left >= 0 {
+			leftDiff = math.Abs(userCS - userCSs[left].cosineSimilarity)
+		} else {
+			leftDiff = -1
+		}
+		if right < len(userCSs) {
+			rightDiff = math.Abs(userCS - userCSs[right].cosineSimilarity)
+		} else {
+			rightDiff = -1
+		}
+		var closestUserID int
+		//Get the closest User
+		if leftDiff > rightDiff {
+			closestUserID = userCSs[left].userID
+			left--
+		} else {
+			closestUserID = userCSs[right].userID
+			right++
+		}
+
+		//Find whether they have rated the movie
+		rating, rated := userRatingsTraining[closestUserID][movieID]
+		if rated {
+			similars++
+			similarsSum += float64(rating.rating)
+		}
+	}
+	return similarsSum / float64(similars)
+}
 
 func main() {
 	const k = 10
@@ -159,8 +200,10 @@ func main() {
 	// fmt.Println(userCSIndex)
 
 	for i := 0; i < 10; i++ {
-		var topUsers UserCSSortable
-		findClosestUsers(i, k, &topUsers)
-		fmt.Println(topUsers)
+		for movieID, rating := range userRatingsValidation[i] {
+			prediction := predictUserRating(i, movieID, k)
+			fmt.Printf("UserID: %4d, MovieID: %4d, Prediction: %1.1f , Actual: %d \n", i, movieID, prediction, rating.rating)
+		}
+		fmt.Println("----------------------")
 	}
 }
