@@ -189,21 +189,55 @@ func predictUserRating(userID int, movieID int, topK int) float64 {
 			similarsSum += float64(rating.rating)
 		}
 	}
+	if similars <= 0 {
+		return 3
+	}
 	return similarsSum / float64(similars)
 }
 
 func main() {
 	const k = 10
+	fmt.Println("Loading Ratings from text file")
 	loadRatings()
+	fmt.Println("Calculating Cosine Similarities for each user")
 	calcUserCS()
 
-	// fmt.Println(userCSIndex)
-
-	for i := 0; i < 10; i++ {
-		for movieID, rating := range userRatingsValidation[i] {
-			prediction := predictUserRating(i, movieID, k)
-			fmt.Printf("UserID: %4d, MovieID: %4d, Prediction: %1.1f , Actual: %d \n", i, movieID, prediction, rating.rating)
+	fmt.Println("----------------------------------------------------------")
+	fmt.Println(" User Rating Prediction")
+	fmt.Println("----------------------------------------------------------")
+	var roundRating = func(r float64) int {
+		if r < 0 {
+			return int(math.Ceil(r - 0.5))
 		}
-		fmt.Println("----------------------")
+		return int(math.Floor(r + 0.5))
 	}
+	// fmt.Println(userCSIndex)
+	globalPredictionCount := 0
+	globalPredictionDiffSum := 0
+
+	for userID := range userRatingsValidation {
+		predictionCount := 0
+		predictionDiffSum := 0
+		for movieID, rating := range userRatingsValidation[userID] {
+			prediction := predictUserRating(userID, movieID, k)
+			predictionRounded := roundRating(prediction)
+			// fmt.Printf("UserID: %4d, MovieID: %4d, Prediction: %1.1f , Rounded Prediction: %d, Actual: %d \n",
+			// 	userID, movieID, prediction, predictionRounded, rating.rating)
+
+			ratingDiff := rating.rating - predictionRounded
+			if ratingDiff < 0 {
+				ratingDiff = -ratingDiff
+			}
+			predictionDiffSum += ratingDiff
+			predictionCount++
+			globalPredictionDiffSum += ratingDiff
+			globalPredictionCount++
+
+		}
+		fmt.Printf("UserID: %4d, Prediction vs Actual - Average Difference: %2.2f \n", userID, (float64(predictionDiffSum) / float64(predictionCount)))
+	}
+	fmt.Println("++++++++++++++++++++++++++++")
+	fmt.Printf(" Global Prediction vs Actual - Average Difference: %2.2f \n", (float64(globalPredictionDiffSum) / float64(globalPredictionCount)))
+	fmt.Println("++++++++++++++++++++++++++++")
+
 }
