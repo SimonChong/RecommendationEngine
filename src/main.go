@@ -53,6 +53,9 @@ func (self CSStore) Sort() {
 
 var userCSStore = make(map[int]CSStore) //userID -> cosine similarities
 
+var movieRatingCount = make(map[int]int)
+var movieRatingSum = make(map[int]int)
+
 func loadRatings() {
 	file, err := os.Open("../data/ratings.txt")
 	if err != nil {
@@ -89,6 +92,14 @@ func loadRatings() {
 		}
 		userRatingCount[userID] = count
 		// fmt.Println(userID, count)
+
+		if _, ok := movieRatingCount[movieID]; !ok {
+			movieRatingSum[movieID] = 0
+			movieRatingCount[movieID] = 0
+		}
+		movieRatingSum[movieID] += rating.rating
+		movieRatingCount[movieID]++
+
 	}
 }
 
@@ -147,7 +158,11 @@ func calcUserCS() {
 
 		// fmt.Println(numerator, denominator)
 		if denominator == 0.0 || numerator == 0.0 {
-			result = 0.0
+			if _, ok := movieRatingCount[movieID]; ok {
+				result = float64(movieRatingSum[movieID]) / float64(movieRatingCount[movieID])
+			} else {
+				return 3
+			}
 		} else {
 			result = numerator / denominator
 		}
