@@ -16,6 +16,9 @@ type Rating struct {
 const movies int = 3952
 const maxRating float64 = 5.0
 
+var movieRatingCount = make(map[int]int)
+var movieRatingSum = make(map[int]int)
+
 //UserID -> (MovieID -> Rating)
 var userRatingsTraining = make(map[int]map[int]Rating)
 var userRatingsValidation = make(map[int]map[int]Rating)
@@ -86,6 +89,12 @@ func loadRatings() {
 		}
 		userRatingCount[userID] = count
 		// fmt.Println(userID, count)
+		if _, ok := movieRatingCount[movieID]; !ok {
+			movieRatingSum[movieID] = 0
+			movieRatingCount[movieID] = 0
+		}
+		movieRatingSum[movieID] += rating.rating
+		movieRatingCount[movieID]++
 	}
 }
 
@@ -190,13 +199,17 @@ func predictUserRating(userID int, movieID int, topK int) float64 {
 		}
 	}
 	if similars <= 0 {
-		return 3
+		if _, ok := movieRatingCount[movieID]; ok {
+			return float64(movieRatingSum[movieID]) / float64(movieRatingCount[movieID])
+		} else {
+			return 3
+		}
 	}
 	return similarsSum / float64(similars)
 }
 
 func main() {
-	const k = 10
+	var k = 10
 	fmt.Println("Loading Ratings from text file")
 	loadRatings()
 	fmt.Println("Calculating Cosine Similarities for each user")
@@ -212,32 +225,35 @@ func main() {
 		return int(math.Floor(r + 0.5))
 	}
 	// fmt.Println(userCSIndex)
-	globalPredictionCount := 0
-	globalPredictionDiffSum := 0
 
-	for userID := range userRatingsValidation {
-		predictionCount := 0
-		predictionDiffSum := 0
-		for movieID, rating := range userRatingsValidation[userID] {
-			prediction := predictUserRating(userID, movieID, k)
-			predictionRounded := roundRating(prediction)
-			// fmt.Printf("UserID: %4d, MovieID: %4d, Prediction: %1.1f , Rounded Prediction: %d, Actual: %d \n",
-			// 	userID, movieID, prediction, predictionRounded, rating.rating)
+	for k = 10; k <= 200; k += 10 {
+		globalPredictionCount := 0
+		globalPredictionDiffSum := 0
 
-			ratingDiff := rating.rating - predictionRounded
-			if ratingDiff < 0 {
-				ratingDiff = -ratingDiff
+		for userID := range userRatingsValidation {
+			predictionCount := 0
+			predictionDiffSum := 0
+			for movieID, rating := range userRatingsValidation[userID] {
+				prediction := predictUserRating(userID, movieID, k)
+				predictionRounded := roundRating(prediction)
+				// fmt.Printf("UserID: %4d, MovieID: %4d, Prediction: %1.1f , Rounded Prediction: %d, Actual: %d \n",
+				// 	userID, movieID, prediction, predictionRounded, rating.rating)
+
+				ratingDiff := rating.rating - predictionRounded
+				if ratingDiff < 0 {
+					ratingDiff = -ratingDiff
+				}
+				predictionDiffSum += ratingDiff
+				predictionCount++
+				globalPredictionDiffSum += ratingDiff
+				globalPredictionCount++
+
 			}
-			predictionDiffSum += ratingDiff
-			predictionCount++
-			globalPredictionDiffSum += ratingDiff
-			globalPredictionCount++
-
+			// fmt.Printf("UserID: %4d, Prediction vs Actual - Average Difference: %2.2f \n", userID, (float64(predictionDiffSum) / float64(predictionCount)))
 		}
-		fmt.Printf("UserID: %4d, Prediction vs Actual - Average Difference: %2.2f \n", userID, (float64(predictionDiffSum) / float64(predictionCount)))
+		fmt.Println("++++++++++++++++++++++++++++")
+		fmt.Printf(" Global Prediction vs Actual | Average Difference: %2.2f | K: %4d\n", (float64(globalPredictionDiffSum) / float64(globalPredictionCount)), k)
+		fmt.Println("++++++++++++++++++++++++++++")
 	}
-	fmt.Println("++++++++++++++++++++++++++++")
-	fmt.Printf(" Global Prediction vs Actual - Average Difference: %2.2f \n", (float64(globalPredictionDiffSum) / float64(globalPredictionCount)))
-	fmt.Println("++++++++++++++++++++++++++++")
 
 }
