@@ -1,0 +1,65 @@
+Loading Ratings from text file
+Calculating Cosine Similarities for each user
+----------------------------------------------------------
+ User Rating Prediction
+----------------------------------------------------------
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 1.01 | K =  10
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.96 | K =  20
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.92 | K =  30
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.90 | K =  40
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.89 | K =  50
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.87 | K =  60
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.86 | K =  70
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.85 | K =  80
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.85 | K =  90
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.84 | K = 100
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.83 | K = 110
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.83 | K = 120
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.82 | K = 130
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.82 | K = 140
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.82 | K = 150
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.81 | K = 160
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.81 | K = 170
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.81 | K = 180
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.80 | K = 190
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.80 | K = 200
+++++++++++++++++++++++++++++
