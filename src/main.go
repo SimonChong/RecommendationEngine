@@ -29,26 +29,29 @@ type UserCS struct {
 
 type UserCSSortable []UserCS
 
-func (this UserCSSortable) Len() int {
-	return len(this)
+func (self UserCSSortable) Len() int {
+	return len(self)
 }
-func (this UserCSSortable) Less(i, j int) bool {
-	return this[i].cosineSimilarity < this[j].cosineSimilarity
+func (self UserCSSortable) Less(i, j int) bool {
+	return self[i].cosineSimilarity < self[j].cosineSimilarity
 }
-func (this UserCSSortable) Swap(i, j int) {
-	this[i], this[j] = this[j], this[i]
+func (self UserCSSortable) Swap(i, j int) {
+	self[i], self[j] = self[j], self[i]
 }
 
-var userCSs UserCSSortable
-var csPoint = (func() [movies]float64 {
-	var rtn [movies]float64
-	for i := 0; i < movies; i++ {
-		rtn[i] = 1
+type CSStore struct {
+	cosineSimilarities      UserCSSortable
+	cosineSimilaritiesIndex map[int]int //userID -> index of cosine similarity
+}
+
+func (self CSStore) Sort() {
+	sort.Sort(sort.Reverse(self.cosineSimilarities))
+	for i, cs := range self.cosineSimilarities {
+		self.cosineSimilaritiesIndex[cs.userID] = i
 	}
-	return rtn
-})()
+}
 
-var userCSIndex = make(map[int]int)
+var userCSStore = make(map[int]CSStore) //userID -> cosine similarities
 
 func loadRatings() {
 	file, err := os.Open("../data/ratings.txt")
@@ -90,113 +93,106 @@ func loadRatings() {
 }
 
 func calcUserCS() {
+	var appendCS = func(userID0 int, userID1 int, cs float64) {
 
-	var calcCS = func(userID int) {
-		ratings := userRatingsTraining[userID]
-		numerator := 0.0
-		for _, value := range ratings {
-			numerator += float64(value.rating) * maxRating
+		if _, ok := userCSStore[userID0]; !ok {
+			userCSStore[userID0] = CSStore{make(UserCSSortable, 0), make(map[int]int)}
 		}
+		if _, ok := userCSStore[userID1]; !ok {
+			userCSStore[userID1] = CSStore{make(UserCSSortable, 0), make(map[int]int)}
+		}
+
+		csU0 := UserCS{userID1, cs}
+		csStore0 := userCSStore[userID0]
+		csStore0.cosineSimilaritiesIndex[userID1] = len(csStore0.cosineSimilarities)
+		csStore0.cosineSimilarities = append(csStore0.cosineSimilarities, csU0)
+		userCSStore[userID0] = csStore0
+
+		// fmt.Println(userCSStore[userID0])
+		// fmt.Println(csStore0.cosineSimilarities)
+
+		csU1 := UserCS{userID0, cs}
+		csStore1 := userCSStore[userID1]
+		csStore1.cosineSimilaritiesIndex[userID0] = len(csStore1.cosineSimilarities)
+		csStore1.cosineSimilarities = append(csStore1.cosineSimilarities, csU1)
+		userCSStore[userID1] = csStore1
+
+	}
+
+	var calcCS = func(userID0 int, userID1 int) {
+
+		_, hasU := userCSStore[userID0]
+		_, hasC := userCSStore[userID0].cosineSimilaritiesIndex[userID1]
+		if hasC && hasU {
+			return //Already calculated this
+		}
+
+		ratings0 := userRatingsTraining[userID0]
+		ratings1 := userRatingsTraining[userID1]
 
 		sum1 := 0.0
 		sum2 := 0.0
-		for _, value := range ratings {
-			sum1 += math.Pow(float64(value.rating), 2)
-			sum2 += maxRating
+
+		numerator := 0.0
+		for movieID, value0 := range ratings0 {
+			value1, ok := ratings1[movieID]
+			if ok {
+				numerator += float64(value0.rating) * float64(value1.rating)
+			}
+			sum1 += math.Pow(float64(value0.rating), 2)
+			sum2 += math.Pow(float64(value1.rating), 2)
 		}
 		denominator := sum1 * sum2
-		// fmt.Println(numerator, denominator)
+		var result float64
 
-		userCSs = append(userCSs, UserCS{userID, numerator / denominator})
+		// fmt.Println(numerator, denominator)
+		if denominator == 0.0 || numerator == 0.0 {
+			result = 0.0
+		} else {
+			result = numerator / denominator
+		}
+
+		appendCS(userID0, userID1, result)
+	}
+	var calcCSMulti = func(userID int) {
+		for userIDt, _ := range userRatingsTraining {
+			calcCS(userID, userIDt)
+		}
+		userCSStore[userID].Sort()
 	}
 
 	for userID := range userRatingsTraining {
-		calcCS(userID)
-	}
+		// fmt.Printf("Calculating CS for user: %4d \n", userID)
+		userCSStore[userID] = CSStore{make(UserCSSortable, 0), make(map[int]int)}
+		calcCSMulti(userID)
+		// fmt.Println(userCSStore[userID])
 
-	sort.Sort(userCSs)
-
-	for i, cs := range userCSs {
-		userCSIndex[cs.userID] = i
-	}
-}
-
-func findClosestUsers(userID int, topK int, topUsers *UserCSSortable) {
-	userIndex := userCSIndex[userID]
-	userCS := userCSs[userIndex].cosineSimilarity
-	left := userIndex - 1
-	right := userIndex + 1
-	count := len(userCSs)
-
-	var leftDiff, rightDiff float64
-	for i := 0; i < topK && (left >= 0 || right < count); i++ {
-		if left >= 0 {
-			leftDiff = math.Abs(userCS - userCSs[left].cosineSimilarity)
-		} else {
-			leftDiff = -1
-		}
-		if right < len(userCSs) {
-			rightDiff = math.Abs(userCS - userCSs[right].cosineSimilarity)
-		} else {
-			rightDiff = -1
-		}
-		if leftDiff > rightDiff {
-			*topUsers = append(*topUsers, userCSs[left])
-			left--
-		} else {
-			*topUsers = append(*topUsers, userCSs[right])
-			right++
-		}
 	}
 }
 
 func predictUserRating(userID int, movieID int, topK int) float64 {
-	userIndex := userCSIndex[userID]
-	userCS := userCSs[userIndex].cosineSimilarity
-	left := userIndex - 1
-	right := userIndex + 1
-	count := len(userCSs)
 
 	similars := 0      //Users that are closeest and have raited the movie
 	similarsSum := 0.0 //Sum of all ratings (to be used for avg calculation)
 
-	var leftDiff, rightDiff float64
-	for i := 0; i < count && similars < topK && (left >= 0 || right < count); i++ {
-		if left >= 0 {
-			leftDiff = math.Abs(userCS - userCSs[left].cosineSimilarity)
-		} else {
-			leftDiff = -1
-		}
-		if right < len(userCSs) {
-			rightDiff = math.Abs(userCS - userCSs[right].cosineSimilarity)
-		} else {
-			rightDiff = -1
-		}
-		var closestUserID int
-		//Get the closest User
-		if leftDiff > rightDiff {
-			closestUserID = userCSs[left].userID
-			left--
-		} else {
-			closestUserID = userCSs[right].userID
-			right++
-		}
-
-		//Find whether they have rated the movie
-		rating, rated := userRatingsTraining[closestUserID][movieID]
-		if rated {
+	for _, cs := range userCSStore[userID].cosineSimilarities {
+		if rating, ok := userRatingsTraining[cs.userID][movieID]; ok {
 			similars++
 			similarsSum += float64(rating.rating)
 		}
+		if similars >= topK {
+			break
+		}
 	}
-	if similars <= 0 {
-		return 3
+	if similarsSum < 1 {
+		return 0.0
 	}
+
 	return similarsSum / float64(similars)
 }
 
 func main() {
-	const k = 10
+	var k = 10
 	fmt.Println("Loading Ratings from text file")
 	loadRatings()
 	fmt.Println("Calculating Cosine Similarities for each user")
@@ -212,32 +208,35 @@ func main() {
 		return int(math.Floor(r + 0.5))
 	}
 	// fmt.Println(userCSIndex)
-	globalPredictionCount := 0
-	globalPredictionDiffSum := 0
 
-	for userID := range userRatingsValidation {
-		predictionCount := 0
-		predictionDiffSum := 0
-		for movieID, rating := range userRatingsValidation[userID] {
-			prediction := predictUserRating(userID, movieID, k)
-			predictionRounded := roundRating(prediction)
-			// fmt.Printf("UserID: %4d, MovieID: %4d, Prediction: %1.1f , Rounded Prediction: %d, Actual: %d \n",
-			// 	userID, movieID, prediction, predictionRounded, rating.rating)
+	for k = 10; k <= 200; k += 10 {
 
-			ratingDiff := rating.rating - predictionRounded
-			if ratingDiff < 0 {
-				ratingDiff = -ratingDiff
+		globalPredictionCount := 0
+		globalPredictionDiffSum := 0
+
+		for userID := range userRatingsValidation {
+			predictionCount := 0
+			predictionDiffSum := 0
+			for movieID, rating := range userRatingsValidation[userID] {
+				prediction := predictUserRating(userID, movieID, k)
+				predictionRounded := roundRating(prediction)
+				// fmt.Printf("UserID: %4d, MovieID: %4d, Prediction: %1.1f , Rounded Prediction: %d, Actual: %d \n",
+				// 	userID, movieID, prediction, predictionRounded, rating.rating)
+
+				ratingDiff := rating.rating - predictionRounded
+				if ratingDiff < 0 {
+					ratingDiff = -ratingDiff
+				}
+				predictionDiffSum += ratingDiff
+				predictionCount++
+				globalPredictionDiffSum += ratingDiff
+				globalPredictionCount++
+
 			}
-			predictionDiffSum += ratingDiff
-			predictionCount++
-			globalPredictionDiffSum += ratingDiff
-			globalPredictionCount++
-
+			//fmt.Printf("UserID: %4d, Prediction vs Actual - Average Difference: %2.2f \n", userID, (float64(predictionDiffSum) / float64(predictionCount)))
 		}
-		fmt.Printf("UserID: %4d, Prediction vs Actual - Average Difference: %2.2f \n", userID, (float64(predictionDiffSum) / float64(predictionCount)))
+		fmt.Println("++++++++++++++++++++++++++++")
+		fmt.Printf(" Global Prediction vs Actual | Average Difference: %2.2f | K = %3d\n", (float64(globalPredictionDiffSum) / float64(globalPredictionCount)), k)
+		fmt.Println("++++++++++++++++++++++++++++")
 	}
-	fmt.Println("++++++++++++++++++++++++++++")
-	fmt.Printf(" Global Prediction vs Actual - Average Difference: %2.2f \n", (float64(globalPredictionDiffSum) / float64(globalPredictionCount)))
-	fmt.Println("++++++++++++++++++++++++++++")
-
 }

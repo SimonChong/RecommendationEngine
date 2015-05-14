@@ -6,7 +6,7 @@ Recommendation Engine for Data Science Workshop
 - Split the data into 2. 
 	- 2/3 rds of the data will be used for training
 	- 1/3 rd of the data will be used to verify our predictions
-- Calculate the Cosine Similarity between user ratings and a common set (I used a max rating for every movie to compare it to)
+- Calculate the Cosine Similarity between user ratings relative to each other user
 - Sort all user Consine Similarity numbers
 - Predict movie ratings using the values calculated
 	- Predict a movie rating by finding the closest K users that have already rated the movie.
