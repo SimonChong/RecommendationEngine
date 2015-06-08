@@ -226,7 +226,7 @@ func main() {
 	}
 	// fmt.Println(userCSIndex)
 
-	for k = 10; k <= 200; k += 10 {
+	for k = 320; k <= 500; k += 20 {
 		globalPredictionCount := 0
 		globalPredictionDiffSum := 0
 
@@ -252,7 +252,7 @@ func main() {
 			// fmt.Printf("UserID: %4d, Prediction vs Actual - Average Difference: %2.2f \n", userID, (float64(predictionDiffSum) / float64(predictionCount)))
 		}
 		fmt.Println("++++++++++++++++++++++++++++")
-		fmt.Printf(" Global Prediction vs Actual | Average Difference: %2.2f | K: %4d\n", (float64(globalPredictionDiffSum) / float64(globalPredictionCount)), k)
+		fmt.Printf(" Global Prediction vs Actual | Average Difference: %2.5f | K: %4d\n", (float64(globalPredictionDiffSum) / float64(globalPredictionCount)), k)
 		fmt.Println("++++++++++++++++++++++++++++")
 	}
 

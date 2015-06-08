@@ -63,3 +63,24 @@ Calculating Cosine Similarities for each user
 ++++++++++++++++++++++++++++
  Global Prediction vs Actual | Average Difference: 0.75 | K:  200
 ++++++++++++++++++++++++++++
+----------------------------------------------------------
+ User Rating Prediction
+----------------------------------------------------------
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.75 | K:  200
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.75 | K:  220
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.75 | K:  240
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.75 | K:  260
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.75 | K:  280
+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ Global Prediction vs Actual | Average Difference: 0.75 | K:  300
+++++++++++++++++++++++++++++
